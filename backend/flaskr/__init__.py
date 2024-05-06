@@ -107,7 +107,7 @@ def create_app(test_config=None):
       if question is None:
         abort(404)
       else:
-        question.delete()   
+        question.delete()
         return jsonify({
             "success": True,
             "question": question.format()
@@ -231,7 +231,7 @@ def create_app(test_config=None):
           'success': True,
           'questions': return_questions,
           'total_questions': len(formatted_questions),
-          'current_category': category.format(),
+          'current_category': category.format()['type'],
         })
 
 
@@ -255,7 +255,11 @@ def create_app(test_config=None):
       body = request.get_json()
       previous_questions = body.get('previous_questions')
       quiz_category = body.get('quiz_category')
-      questions = Question.query.filter(Question.category == quiz_category['id']).order_by(Question.id).all()
+      questions = None
+      if quiz_category['id'] == 0:
+        questions = Question.query.order_by(Question.id).all()
+      else:
+        questions = Question.query.filter(Question.category == quiz_category['id']).order_by(Question.id).all()
 
       list_random_questions = [q.format() for q in questions if q.id not in previous_questions]
       total_questions = len(list_random_questions)
