@@ -6,6 +6,11 @@ from flask_sqlalchemy import SQLAlchemy
 from flaskr import create_app
 from models import setup_db, Question, Category
 
+DB_HOST = os.getenv('DB_HOST', 'localhost:5432')
+DB_USER = os.getenv('DB_USER', 'lethihue')
+DB_PASSWORD = os.getenv('DB_PASSWORD', '')
+DB_NAME = os.getenv('DB_NAME', "trivia")
+DB_PATH = "postgres://{}:{}@{}/{}".format(DB_USER, DB_PASSWORD, DB_HOST, DB_NAME)
 
 class TriviaTestCase(unittest.TestCase):
     """This class represents the trivia test case"""
@@ -14,8 +19,7 @@ class TriviaTestCase(unittest.TestCase):
         """Define test variables and initialize app."""
         self.app = create_app()
         self.client = self.app.test_client
-        self.database_name = "trivia_test"
-        self.database_path = "postgres://{}/{}".format('localhost:5432', self.database_name)
+        self.database_path = DB_PATH
         setup_db(self.app, self.database_path)
 
         # binds the app to the current context
@@ -62,7 +66,13 @@ class TriviaTestCase(unittest.TestCase):
         self.assertNotEqual(data_1, data_2)
 
     def test_delete_question(self):
-        res = self.client().delete('/questions/5')
+        #prepare 
+        question_for_delete = Question("How do you want to create?", "ok", 2, 1)
+        self.db.session.add(question_for_delete)
+        self.db.session.commit()
+
+        #test delete function
+        res = self.client().delete('/questions/' + question_for_delete.id)
         data = json.loads(res.data)
 
         self.assertEqual(res.status_code, 200)

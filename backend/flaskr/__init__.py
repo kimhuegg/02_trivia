@@ -65,19 +65,14 @@ def create_app(test_config=None):
   @app.route('/questions')
   def get_questions():
       try:
-        questions = Question.query.order_by(Question.id).all()
+        page = request.args.get('page', 1, type=int)
+
+        total_questions = Question.query.count()
+        questions = Question.query.order_by(Question.id).paginate(page=page,max_per_page=QUESTIONS_PER_PAGE,error_out=False).items
         formatted_questions = [c.format() for c in questions]
+
         categories = Category.query.order_by(Category.id).all()
         formatted_categories = [c.format() for c in categories]
-
-        # format for questions
-        page = request.args.get('page', 1, type=int)
-        start = (page - 1) * QUESTIONS_PER_PAGE
-        end = start + QUESTIONS_PER_PAGE
-        if page:
-          return_questions = formatted_questions[start:end]
-        else:
-           return_questions = formatted_questions[0:10]
 
         # format for catgories
         converted_categpries = {}
@@ -86,8 +81,8 @@ def create_app(test_config=None):
         
         return jsonify({
             'success': True,
-            'questions': return_questions,
-            'total_questions': len(formatted_questions),
+            'questions': formatted_questions,
+            'total_questions': total_questions,
             'categories': converted_categpries
           })
       except:
@@ -141,22 +136,16 @@ def create_app(test_config=None):
         question.insert()
 
         # format return question
-        selection = Question.query.order_by(Question.id).all()
-        formatted_questions = [c.format() for c in selection]
-
         page = request.args.get('page', 1, type=int)
-        start = (page - 1) * QUESTIONS_PER_PAGE
-        end = start + QUESTIONS_PER_PAGE
-        if page:
-          return_questions = formatted_questions[start:end]
-        else:
-          return_questions = formatted_questions[0:10]
+        total_questions = Question.query.count()
+        questions = Question.query.order_by(Question.id).paginate(page=page,max_per_page=QUESTIONS_PER_PAGE,error_out=False).items
+        formatted_questions = [c.format() for c in questions]
 
         return jsonify({
           'success': True,
           'created': question.id,
-          'questions': return_questions,
-          'total_questions': len(formatted_questions),
+          'questions': formatted_questions,
+          'total_questions': total_questions,
         })
       else:
         abort(422)
@@ -181,21 +170,15 @@ def create_app(test_config=None):
         search_term = body.get('searchTerm')
 
         # format return question
-        selection = Question.query.filter(Question.question.ilike(f'%{search_term}%')).order_by(Question.id).all()
-        formatted_questions = [c.format() for c in selection]
-
         page = request.args.get('page', 1, type=int)
-        start = (page - 1) * QUESTIONS_PER_PAGE
-        end = start + QUESTIONS_PER_PAGE
-        if page:
-          return_questions = formatted_questions[start:end]
-        else:
-          return_questions = formatted_questions[0:10]
+        total_questions = Question.query.filter(Question.question.ilike(f'%{search_term}%')).count()
+        selection = Question.query.filter(Question.question.ilike(f'%{search_term}%')).order_by(Question.id).paginate(page=page, max_per_page=QUESTIONS_PER_PAGE, error_out=False).items
+        formatted_questions = [c.format() for c in selection]
 
         return jsonify({
           'success': True,
-          'questions': return_questions,
-          'total_questions': len(formatted_questions),
+          'questions': formatted_questions,
+          'total_questions': total_questions,
         })
 
 
@@ -213,24 +196,18 @@ def create_app(test_config=None):
   def get_questions_by_category(category_id):
     try:
         # format return question
-        selection = Question.query.filter(Question.category == category_id).order_by(Question.id).all()
+        page = request.args.get('page', 1, type=int)
+        selection = Question.query.filter(Question.category == category_id).order_by(Question.id).paginate(page=page,max_per_page=QUESTIONS_PER_PAGE,error_out=False).items
         category = Category.query.filter(Category.id == category_id).one_or_none()
         if category is None:
           abort(422)
         formatted_questions = [c.format() for c in selection]
-
-        page = request.args.get('page', 1, type=int)
-        start = (page - 1) * QUESTIONS_PER_PAGE
-        end = start + QUESTIONS_PER_PAGE
-        if page:
-          return_questions = formatted_questions[start:end]
-        else:
-          return_questions = formatted_questions[0:10]
+        total_questions = Question.query.count()
 
         return jsonify({
           'success': True,
-          'questions': return_questions,
-          'total_questions': len(formatted_questions),
+          'questions': formatted_questions,
+          'total_questions': total_questions,
           'current_category': category.format()['type'],
         })
 
